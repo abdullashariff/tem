@@ -1,25 +1,58 @@
 import React from 'react';
 import logo from './logo.svg';
 import './App.css';
+import AppRoutes from './shared/routes';
+import Routers from './shared/routes';
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Link
+} from "react-router-dom";
+import Loadable from 'react-loadable';
+import Login from './modules/login';
+import MenuAppBar from './shared/layout/menu';
+import { makeStyles } from '@material-ui/core';
 
-function App() {
+const LoginLoadable = Loadable({
+  loader: () => import('./modules/login'),
+  loading: <div>Loading...</div>
+});
+
+const useStyles = makeStyles(theme => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    {
+      // root: { display: 'flex' },
+      // content: {
+      //   flexGrow: 1,
+      //   padding: theme.spacing(0, 1)
+      // },
+      // toolbar: theme.mixins.toolbar,
+      // menuButton: {
+      //   marginRight: '16px'
+      // },
+      // title: { flexGrow: 1 }
+    }
+  )
+});
+
+const App = () => {
+  const classes = useStyles();
+
+  return (
+    <Router >
+      <Switch>
+        <Route path="/" component={Login} exact />
+        <div className={classes.root}>
+          <MenuAppBar />
+          <main className={classes.content}>
+            <div className={classes.toolbar}>
+              <AppRoutes />
+            </div>
+          </main>
+        </div>
+      </Switch>
+    </Router>
   );
 }
 
