@@ -6,7 +6,8 @@ import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
 import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
-import WorkOrderView from '../../modules/work-order/workorder-view';
+import WorkOrderView from './workorder-view';
+import appStyles from '../../shared/layout/my-styles';
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -48,7 +49,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-export default function RAKTabs() {
+const WorkOrder = props => {
   const classes = useStyles();
   const [value, setValue] = React.useState(0);
 
@@ -59,13 +60,13 @@ export default function RAKTabs() {
   return (
     <div className={classes.root}>
       <AppBar position="static">
-        <Tabs value={value} onChange={handleChange} aria-label="simple tabs example">
+        <Tabs value={value} onChange={handleChange} aria-label="">
           <Tab label="TEM Work Order" {...a11yProps(0)} />
           <Tab label="Septic Tank Work Order" {...a11yProps(0)} />
         </Tabs>
       </AppBar>
       <TabPanel value={value} index={0}>
-        <WorkOrderView props/>
+        <WorkOrderView props classes={appStyles}/>
       </TabPanel>
       <TabPanel value={value} index={1}>
         <h2> Under development ....</h2>
@@ -73,3 +74,5 @@ export default function RAKTabs() {
     </div>
   );
 }
+
+export default WorkOrder;

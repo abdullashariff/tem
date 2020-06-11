@@ -13,6 +13,8 @@ import Loadable from 'react-loadable';
 import Login from './modules/login';
 import MenuAppBar from './shared/layout/menu';
 import { makeStyles } from '@material-ui/core';
+import { createHashHistory } from 'history'
+const history = createHashHistory();
 
 const LoginLoadable = Loadable({
   loader: () => import('./modules/login'),
@@ -40,11 +42,11 @@ const App = () => {
   const classes = useStyles();
 
   return (
-    <Router >
+    <Router history={history}>
       <Switch>
         <Route path="/" component={Login} exact />
         <div className={classes.root}>
-          <MenuAppBar />
+          <MenuAppBar history={history}/>
           <main className={classes.content}>
             <div className={classes.toolbar}>
               <AppRoutes />

@@ -1,7 +1,7 @@
 
 import { createStyles } from '@material-ui/core';
 
-const styles = (theme) => {
+const appStyles = (theme) => {
     createStyles({
         root: {
             padding: theme.spacing(2)
@@ -35,18 +35,34 @@ const styles = (theme) => {
             margin: theme.spacing(3, 0, 2),
         },
         title: {
-            color:theme.palette.primary.main,
-            marginTop:theme.spacing(2)
+            color: theme.palette.primary.main,
+            marginTop: theme.spacing(2)
         },
         heading: {
-          fontSize: theme.typography.pxToRem(15),
-          fontWeight: theme.typography.fontWeightRegular,
+            fontSize: theme.typography.pxToRem(15),
+            fontWeight: theme.typography.fontWeightRegular,
         },
         loginContainer: {
             margin: '16px',
             paddingTop: '32px'
+        },
+        card: {
+            maxWidth: 345
+        },
+        media: {
+            height: 0,
+            paddingTop: '56.25%', // 16:9,
+            marginTop: '30'
+        },
+        gtImg: {
+            width: '200px',
+            height: '300px'
+        },
+        woButtonRight :{
+             width: '25%',
+              marginRight: '10px'
         }
     });
 }
 
-export default styles;
+export default appStyles;

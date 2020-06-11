@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import MyTextField from '../shared/ui-components/textfield';
 import { Paper, Grid, FormControlLabel, Button, Checkbox, withStyles, Container, Typography } from '@material-ui/core';
 import { Face } from '@material-ui/icons'
-import styles from './../shared/layout/my-styles';
+import appStyles from './../shared/layout/my-styles';
 import { addUserDtls } from './../reducers/user-reducer';
 import { useDispatch } from 'react-redux';
-import UserReducer from './../reducers/user-reducer';
+import UserLoginDetails from './../reducers/user-reducer';
 import Axios from 'axios';
 
 const Login = (props) => {
@@ -30,10 +30,8 @@ const Login = (props) => {
 
     const handleClick = e => {
         // props.addUserDtls({ ...UserReducer, userDetails: state });
-        setDispatch(addUserDtls({ ...UserReducer, userDetails: state }));
-
+        setDispatch(addUserDtls({ ...UserLoginDetails, userDetails: state }));
         validateUser();
-
     }
 
     const validateUser = async () => {
@@ -47,9 +45,9 @@ const Login = (props) => {
             },
         });
 
-        if (response && response.data && response.data.firdtName) {
+        if (response && response.data && response.data.firstName) {
             console.log(response.data);
-            setDispatch(addUserDtls({ ...UserReducer, userDetails: response.data, isLogin:true }));
+            setDispatch(addUserDtls(response.data));
             props.history.push('/home');
         }
     };
@@ -115,4 +113,4 @@ const Login = (props) => {
 //     return addUserDtls = details => { dispatch(addUserDtls(details)) }
 // }
 
-export default withStyles(styles)(Login);
+export default withStyles(appStyles)(Login);

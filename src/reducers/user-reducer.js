@@ -13,9 +13,9 @@ export const ADD_USER_DTLS = 'ADD_USER_DTLS';
 export const addUserDtls = payload => ({ type: ADD_USER_DTLS, payload });
 
 // reducer
-const UserReducer = (state = initialUserState, action) => {
+const UserLoginDetails = (state = initialUserState, action) => {
     if (action.type === ADD_USER_DTLS) {
-        return action.payload;
+        return {...state, userDetails:action.payload,isLogin:true};
     } else return state;
 }
-export default UserReducer;
+export default UserLoginDetails;

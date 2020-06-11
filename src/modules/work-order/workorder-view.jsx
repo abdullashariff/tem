@@ -1,24 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import MyTextField from '../../shared/ui-components/textfield';
-import { Paper, Grid, FormControlLabel, Button, withStyles, Container, Typography, IconButton, Switch, TextareaAutosize, Checkbox } from '@material-ui/core';
-import { PhotoCamera } from '@material-ui/icons'
-import styles from './../../shared/layout/my-styles';
-import { addUserDtls } from './../../reducers/user-reducer';
-import { connect, useDispatch, useSelector } from 'react-redux';
-import UserReducer from './../../reducers/user-reducer';
+import { Paper, Grid, FormControlLabel, Button, withStyles, Container, Typography, TextareaAutosize, Checkbox, makeStyles, CircularProgress } from '@material-ui/core';
+import appStyles from './../../shared/layout/my-styles';
+import { useSelector } from 'react-redux';
 import ExpansionPanel from '@material-ui/core/ExpansionPanel';
 import ExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
 import ExpansionPanelDetails from '@material-ui/core/ExpansionPanelDetails';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import ABDSelector from '../../shared/ui-components/ab-selector';
 import { currentDate } from '../../shared/date-utils';
-import { CLEANING_COMPANIES, workClassList, priorityList, fogPercentageList, volumeList, waterSourceList, trapList, trapListSize, activitytypeList } from './work-order-constants';
+import { CLEANING_COMPANIES, workClassList, priorityList, fogPercentageList, volumeList, waterSourceList, trapList, trapListSize, activitytypeList, headers, customerStatusList, cleaningCountList, gtInstalledCountList } from './work-order-constants';
+import { APP_HEADERS } from '../../shared/constants';
+const axios = require('axios');
+
+const useStyles = makeStyles((theme) => ({
+    root:{
+        position: 'sticky',
+        paddingTop: '32px',
+        top:0
+    },
+    gtImg: {
+        width: '200px',
+        height: '300px'
+    },
+    woButtonRight: {
+        width: '25%',
+        marginRight: '10px'
+    }
+}));
 
 const WorkOrderView = props => {
 
-
-    const userDetails = useSelector(state => state.userDetails);
-    const axios = require('axios');
+    // console.log(props);
+    const userLoginDetails = useSelector(state => state['UserLoginDetails']);
+    const workorder = useSelector(state => state['WorkorderReducer']);
+    let workOrder = null;
+    if (workorder && workorder.workorderDetails && workorder.workorderDetails.workOrder) {
+        workOrder = workorder.workorderDetails.workOrder;
+    }
+    
     const [workClass, setWorkClass] = useState([]);
     const [priority, setPriority] = useState([]);
     const [greaceTrapSize, setGreaceTrapSize] = useState([]);
@@ -30,44 +50,83 @@ const WorkOrderView = props => {
     const [gtInstalled, setGtInstalled] = useState(1);
     const [waterSource, setWaterSource] = useState([]);
     const [locations, setLocations] = useState([]);
+    const [progressBar, setProgressBar] = useState(true);
+    const [isUpdate, setUpdate] = useState(true);
 
     const initialState = {
-        department: '', status: '', organization: '', created: '', createdBy: '', createdDate: currentDate(), plotNumber: '', actualCleanPerMonth: '',
-        actualGreaceQty: '', expectedGreaceQty: '', dateReported: currentDate(), assignedTo: '', scheduleStartDate: currentDate(), scheduleEndDate: currentDate(),
-        startDate: currentDate(), completedDate: currentDate(), remarks: ''
+        workorderId: null, department: '', status: '', organization: '', created: '', createdBy: '',
+        plotNumber: '', actualCleanPerMonth: '',
+        actualGreaceQty: '', expectedGreaceQty: '', assignedTo: '',
+        createdDate: workOrder && workOrder.createdDate ? workOrder.createdDate: currentDate(),
+        dateReported: workOrder && workOrder.dateReported ? workOrder.dateReported:currentDate(), 
+        scheduleStartDate: workOrder && workOrder.scheduleStartDate ? workOrder.scheduleStartDate:currentDate(),
+        scheduleEndDate: workOrder && workOrder.scheduleEndDate ? workOrder.scheduleEndDate:currentDate(),
+        startDate: workOrder && workOrder.startDate ? workOrder.startDate:currentDate(),
+        completedDate: workOrder && workOrder.completedDate ? workOrder.completedDate:currentDate(),
+        remarks: '', img1: '', img2: '', img3: '', img4: ''
     };
 
     const [state, setState] = useState(initialState);
     const [volume, setVolume] = useState([]);
-    const ucoIntialStateState = { volume, UCOinvoice: '', remarks: '', ucoCollected };
+    const ucoIntialStateState = { ucoInvoice: '', remarks: '', ucoCollected };
     const [ucoState, setUcoState] = useState(ucoIntialStateState);
-    const imgInitialState = { images: [] };
-    // const [imgState, setImgState] = useState(imgInitialState);
-    const [activitytype, setActivitytype] = useState([]);
+    const [activityType, setActivitytype] = useState([]);
     const businessInitialState = {
-        businessName: '', location: '', activitytype, licenseNo: '', rakwaJobCardNo: '', createdBy: 'agent name', customerContactDetails: '', landMark: '', status: 'Awaiting',
-        organization: 'gt cleaning company', createdDate: currentDate(), sector: ''
+        businessName: '', location: '', activityType, licenseNo: '', rakwaJobCardNo: '', createdBy: '', contantNo: '', landMark: '', status: 'Awaiting',
+        organization: '', createdDate: currentDate(), sector: ''
     };
     const [businessState, setBusnissState] = useState(businessInitialState);
 
     const fetchLocations = async () => {
+        setProgressBar(true);
         const response = await axios({
             method: 'POST',
             url: 'http://localhost:8080/tem/getlocations',
             data: { state: 'RAK', country: 'UAE' },
-            headers: {
-                'content-type': 'application/json', 'Access-Control-Allow-Origin': "*"
-            },
+            headers: APP_HEADERS,
         });
-
+        setProgressBar(false);
         setLocations(response.data);
-    }
+    };
 
     useEffect(() => {
-        if (locations.length === 0) {
+        if (locations && locations.length === 0) {
             fetchLocations();
         }
     }, [locations]);
+
+    // to update the record
+    useEffect(() => {
+        if (isUpdate) {
+            setUpdate(false);
+            if (workOrder) {
+                setState(workOrder);
+                if (workOrder.business) {
+                    setBusnissState(workOrder.business);
+                    setActivitytype(workOrder.business.activityType);
+                }
+                if (workOrder.uco) {
+                    setVolume(workOrder.uco.volume);
+                    setUcoState(workOrder.uco);
+                    setUCOStatus(workOrder.uco.ucoCollected);
+                }
+
+                setWorkClass(workOrder.workClass);
+                setPriority(workOrder.priority);
+                if (workOrder.gtSize) {
+                    const gtSize = workOrder.gtSize;
+                    setGreaceTrapSize(gtSize && gtSize.replace(',', ' ').split(' '));
+                }
+                setFogPercentage(workOrder.fogPercentage);
+                setCleaningCount(workOrder.actualCleaningNo);
+                setGTCompany(workOrder.cleaningComponay);
+                setGtInstalled(workOrder.gtInstalled);
+                setWaterSource(workOrder.waterSource);
+                setLocations(workOrder.locations);
+                setCleaningStatus(workOrder.cleaningStatus);
+            }
+        }
+    }, [isUpdate, workorder]);
 
     useEffect(() => {
         var BreakException = {};
@@ -84,12 +143,33 @@ const WorkOrderView = props => {
             if (e !== BreakException) throw e;
         }
     }, [businessState.location, setBusnissState, locations]);
-    // const setDispatch = useDispatch();
 
     const handleChange = e => {
+
         const { id, value } = e.target;
-        if (!id || !value) return;
+        if (!id) return;
+
+        if (id.includes('img')) {
+            handleFileSelect(e, id);
+            return
+        }
+
         setState(oldState => { return { ...oldState, [id]: value } });
+    }
+
+    const handleFileSelect = (evt, id) => {
+        var f = evt.target.files[0]; // FileList object
+        var reader = new FileReader();
+        // Closure to capture the file information.
+        reader.onload = (function (theFile) {
+            return function (e) {
+                var binaryData = e.target.result;
+                var base64String = window.btoa(binaryData);
+                setState(oldState => { return { ...oldState, [id]: `data:image/png;base64, ${base64String}` } });
+            };
+        })(f);
+        // Read in the image file as a data URL.
+        reader.readAsBinaryString(f);
     }
 
     const handleChangetUCO = e => {
@@ -99,7 +179,7 @@ const WorkOrderView = props => {
 
     const handleChangeBusiness = e => {
         const { id, value } = e.target;
-        if (!id || !value) return;
+        if (!id) return;
         setBusnissState(oldState => { return { ...oldState, [id]: value } });
     }
 
@@ -116,27 +196,35 @@ const WorkOrderView = props => {
     }, [greaceTrapSize, gtInstalled]);
 
     const saveWorkOrder = async () => {
-
+        setProgressBar(true);
         const response = await axios({
             method: 'POST',
             url: 'http://localhost:8080/tem/saveWorkOrder',
             data: {
-                ...state, waterSource, workClass, priority, fogPercentage, cleaningStatus, actualCleaningNo: cleaningCount, cleaningComponay: gtCompany,
-                uco: { ...ucoState, ucoInvoice: ucoState.UCOinvoice, volume: ucoState.volume.join(), ucoCollected },
-                business: businessState, gtInstalled, gtSize: greaceTrapSize.join(), gtInvoice: state.gtInvoiceNo
+                ...state, waterSource, workClass, priority, fogPercentage, cleaningStatus, actualCleaningNo: cleaningCount, cleaningComponay: gtCompany, createdBy: fullName(),
+                workorderId: workorder.workorderDetails && workorder.workorderDetails.workOrder ? workorder.workorderDetails.workOrder.workorderId : null,
+                uco: { ...ucoState, ucoInvoice: ucoState.ucoInvoice, volume, ucoCollected },
+                business: { ...businessState, activityType, contantNo: businessState.contantNo }, gtInstalled, gtSize: greaceTrapSize.join(), gtInvoice: state.gtInvoiceNo,
+                gtImages: [{ imgStatus: true, imageData: state.img1 },
+                { imgStatus: true, imageData: state.img2 }, { imgStatus: false, imageData: state.img3 }, { imgStatus: false, imageData: state.img4 }]
             },
-            headers: {
-                'content-type': 'application/json', 'Access-Control-Allow-Origin': "*"
-            },
+            headers: APP_HEADERS,
         });
-
+        setProgressBar(false);
         console.log(response);
     };
 
-    const classes = props.classes;
+    const classes = useStyles();
+
+    const fullName = () => {
+        return userLoginDetails && userLoginDetails.userDetails && userLoginDetails.userDetails.firstName && userLoginDetails.userDetails.lastName
+            && `${userLoginDetails.userDetails.firstName} ${userLoginDetails.userDetails.lastName}`;
+    };
 
     return (
-        <Container style={{ paddingTop: '32px' }}>
+        <div className={classes.root}>
+        <Container >
+            {progressBar && <div style={{ Right: '50%' }}><CircularProgress /></div>}
             <Paper className={classes.padding}>
                 <div className={classes.margin}>
                     <Typography className={classes.title} align="center" varient="h2">Grease Trap Cleaning Details</Typography>
@@ -194,17 +282,17 @@ const WorkOrderView = props => {
                                         className={classes.textField}
                                         value={businessState.sector} />
 
-                                    <ABDSelector {...props} isMulti={false} list={activitytypeList} title={'Activity type'} value={activitytype} setValue={setActivitytype} />
+                                    <ABDSelector {...props} isMulti={false} list={activitytypeList} title={'Activity type'} value={activityType} setValue={setActivitytype} />
 
                                     <MyTextField
-                                        id="customerContactDetails"
+                                        id="contantNo"
                                         label="Customer Contact Details"
                                         InputProps={{
                                             readOnly: false,
                                         }}
                                         fullWidth
                                         className={classes.textField}
-                                        value={businessState.customerContactDetails}
+                                        value={businessState.contantNo}
                                         onChange={handleChangeBusiness} />
 
                                     <MyTextField
@@ -218,7 +306,7 @@ const WorkOrderView = props => {
                                         value={businessState.landMark}
                                         onChange={handleChangeBusiness} />
 
-                                    <MyTextField
+                                    {/* <MyTextField
                                         id="rakwaJobCardNo"
                                         label="RAKWA Job Card No"
                                         InputProps={{
@@ -227,7 +315,7 @@ const WorkOrderView = props => {
                                         fullWidth
                                         className={classes.textField}
                                         value={businessState.rakwaJobCardNo}
-                                        onChange={handleChangeBusiness} />
+                                        onChange={handleChangeBusiness} /> */}
 
                                 </Grid>
 
@@ -255,7 +343,7 @@ const WorkOrderView = props => {
                                         }}
                                         fullWidth
                                         className={classes.textField}
-                                        value={userDetails && userDetails.organization} />
+                                        value={userLoginDetails && userLoginDetails.userDetails && userLoginDetails.userDetails.organization} />
 
                                     <MyTextField
                                         id="createdBy"
@@ -265,7 +353,7 @@ const WorkOrderView = props => {
                                         }}
                                         fullWidth
                                         className={classes.textField}
-                                        value={userDetails && userDetails.createdBy} />
+                                        value={fullName()} />
 
 
                                     <MyTextField
@@ -292,184 +380,224 @@ const WorkOrderView = props => {
 
                         <ExpansionPanelDetails>
 
-                            <Grid container row>
-                                <Grid item xs={4} style={{ padding: '5px' }}>
-                                    <ABDSelector {...props} isMulti={false} list={workClassList} title={'Work Class'} value={workClass} setValue={setWorkClass} />
+                            <Grid>
+                                <Grid container row>
+                                    <Grid item xs={4} style={{ padding: '5px' }}>
+                                        <ABDSelector {...props} isMulti={false} list={workClassList} title={'Work Class'} value={workClass} setValue={setWorkClass} />
 
-                                    <ABDSelector {...props} isMulti={false} list={priorityList} title={'Priority'} value={priority} setValue={setPriority} />
+                                        <ABDSelector {...props} isMulti={false} list={priorityList} title={'Priority'} value={priority} setValue={setPriority} />
 
-                                    <ABDSelector {...props} isMulti={false} list={fogPercentageList} title={'FOG %'} value={fogPercentage} setValue={setFogPercentage} />
+                                        <ABDSelector {...props} isMulti={false} list={fogPercentageList} title={'FOG %'} value={fogPercentage} setValue={setFogPercentage} />
 
-                                    <ABDSelector {...props} isMulti={false} list={['Pending', 'Done', 'Customer refuse']} title={'Cleaning Status'} value={cleaningStatus} setValue={setCleaningStatus} />
+                                        <ABDSelector {...props} isMulti={false} list={customerStatusList} title={'Cleaning Status'} value={cleaningStatus} setValue={setCleaningStatus} />
 
-                                    <MyTextField
-                                        id="remarks"
-                                        label="Remarks"
-                                        InputProps={{
-                                            readOnly: true,
-                                        }}
-                                        fullWidth
-                                        className={classes.textField}
-                                        value={state.remarks}
-                                        onChange={handleChange} />
+                                        <MyTextField
+                                            id="remarks"
+                                            label="Remarks"
+                                            InputProps={{
+                                                readOnly: true,
+                                            }}
+                                            fullWidth
+                                            className={classes.textField}
+                                            value={state.remarks}
+                                            onChange={handleChange} />
+                                    </Grid>
+
+                                    <Grid iitem xs={4} style={{ padding: '5px' }}>
+                                        <ABDSelector {...props} isMulti={false} list={cleaningCountList} title={'Actual Clean No per month'} value={cleaningCount} setValue={setCleaningCount} />
+
+                                        <ABDSelector {...props} isMulti={true} list={trapList} title={'Greace Trap Size'} value={greaceTrapSize} setValue={setGreaceTrapSize} />
+
+                                        <ABDSelector {...props} isMulti={false} list={gtInstalledCountList} title={'Greace Tap Installed'} value={gtInstalled} setValue={setGtInstalled} state={state} />
+
+                                        <MyTextField
+                                            id="expectedGreaceQty"
+                                            label="Expected Greace Qty (GLN)"
+                                            InputProps={{
+                                                readOnly: false,
+                                            }}
+                                            fullWidth
+                                            className={classes.textField}
+                                            value={state.expectedGreaceQty}
+                                            onChange={handleChange} />
+
+                                        <MyTextField
+                                            id="actualGreaceQty"
+                                            label="Actual Greace Qty (GLN)"
+                                            InputProps={{
+                                                readOnly: false,
+                                            }}
+                                            fullWidth
+                                            className={classes.textField}
+                                            value={state.actualGreaceQty}
+                                            onChange={handleChange} />
+
+                                        <ABDSelector {...props} isMulti={false}
+                                            list={waterSourceList} title={'Water Source'} value={waterSource} setValue={setWaterSource} />
+
+
+                                        <ABDSelector {...props} isMulti={false}
+                                            list={CLEANING_COMPANIES} title={'GT Cleaning Company'} value={gtCompany} setValue={setGTCompany} />
+
+                                        <MyTextField
+                                            id="gtInvoiceNo"
+                                            label="GT Invoice No."
+                                            InputProps={{
+                                                readOnly: false,
+                                            }}
+                                            fullWidth
+                                            className={classes.textField}
+                                            value={state.gtInvoiceNo}
+                                            onChange={handleChange} />
+
+                                    </Grid>
+
+                                    <Grid item xs={3} style={{ padding: '5px' }}>
+                                        <MyTextField
+                                            id="dateReported"
+                                            label="Date Reported"
+                                            type="date"
+                                            fullWidth
+                                            className={classes.textField}
+                                            defaultValue={currentDate()}
+                                            onChange={handleChange}
+                                            InputLabelProps={{
+                                                shrink: true,
+                                            }} />
+
+                                        <MyTextField
+                                            id="reportedTo"
+                                            label="Reported To"
+                                            InputProps={{
+                                                readOnly: true,
+                                            }}
+                                            fullWidth
+                                            className={classes.textField}
+                                            value={'TEM'}
+                                            onChange={handleChange} />
+
+
+                                        <MyTextField
+                                            id="scheduleStartDate"
+                                            label="Schedule Start Date"
+                                            InputProps={{
+                                                readOnly: true,
+                                            }}
+                                            fullWidth
+                                            className={classes.textField}
+                                            value={state.scheduleStartDate}
+                                            type="date"
+                                            onChange={handleChange} />
+
+                                        <MyTextField
+                                            id="scheduleEndDate"
+                                            label="Schedule End Date"
+                                            InputProps={{
+                                                readOnly: true,
+                                            }}
+                                            fullWidth
+                                            className={classes.textField}
+                                            value={state.scheduleEndDate}
+                                            type="date"
+                                            onChange={handleChange} />
+
+                                        <MyTextField
+                                            id="startDate"
+                                            label="Start Date"
+                                            InputProps={{
+                                                readOnly: true,
+                                            }}
+                                            fullWidth
+                                            className={classes.textField}
+                                            value={state.startDate}
+                                            type="date"
+                                            onChange={handleChange} />
+
+                                        <MyTextField
+                                            id="completedDate"
+                                            label="Date Completed"
+                                            InputProps={{
+                                                readOnly: true,
+                                            }}
+                                            fullWidth
+                                            className={classes.textField}
+                                            value={state.completedDate}
+                                            type="date"
+                                            onChange={handleChange} />
+                                    </Grid>
                                 </Grid>
-
-                                <Grid iitem xs={4} style={{ padding: '5px' }}>
-                                    <ABDSelector {...props} isMulti={false} list={[1, 2, 3, 4]} title={'Actual Clean No per month'} value={cleaningCount} setValue={setCleaningCount} />
-
-                                    <ABDSelector {...props} isMulti={true} list={trapList} title={'Greace Trap Size'} value={greaceTrapSize} setValue={setGreaceTrapSize} />
-
-                                    <ABDSelector {...props} isMulti={false} list={[1, 2, 3, 4]} title={'Greace Tap Installed'} value={gtInstalled} setValue={setGtInstalled} state={state} />
-
-                                    <MyTextField
-                                        id="expectedGreaceQty"
-                                        label="Expected Greace Qty (GLN)"
-                                        InputProps={{
-                                            readOnly: false,
-                                        }}
-                                        fullWidth
-                                        className={classes.textField}
-                                        value={state.expectedGreaceQty}
-                                        onChange={handleChange} />
-
-                                    <MyTextField
-                                        id="actualGreaceQty"
-                                        label="Actual Greace Qty (GLN)"
-                                        InputProps={{
-                                            readOnly: false,
-                                        }}
-                                        fullWidth
-                                        className={classes.textField}
-                                        value={state.actualGreaceQty}
-                                        onChange={handleChange} />
-
-                                    <ABDSelector {...props} isMulti={false}
-                                        list={waterSourceList} title={'Water Source'} value={waterSource} setValue={setWaterSource} />
-
-
-                                    <ABDSelector {...props} isMulti={false}
-                                        list={CLEANING_COMPANIES} title={'GT Cleaning Company'} value={gtCompany} setValue={setGTCompany} />
-
-                                    <MyTextField
-                                        id="gtInvoiceNo"
-                                        label="GT Invoice No."
-                                        InputProps={{
-                                            readOnly: false,
-                                        }}
-                                        fullWidth
-                                        className={classes.textField}
-                                        value={state.gtInvoiceNo}
-                                        onChange={handleChange} />
-
-                                </Grid>
-
-                                <Grid item xs={3} style={{ padding: '5px' }}>
-                                    <MyTextField
-                                        id="dateReported"
-                                        label="Date Reported"
-                                        type="date"
-                                        fullWidth
-                                        className={classes.textField}
-                                        defaultValue={currentDate()}
-                                        onChange={handleChange}
-                                        InputLabelProps={{
-                                            shrink: true,
-                                        }} />
-
-                                    <MyTextField
-                                        id="reportedTo"
-                                        label="Reported To"
-                                        InputProps={{
-                                            readOnly: true,
-                                        }}
-                                        fullWidth
-                                        className={classes.textField}
-                                        value={'TEM'}
-                                        onChange={handleChange} />
-
-
-                                    <MyTextField
-                                        id="scheduleStartDate"
-                                        label="Schedule Start Date"
-                                        InputProps={{
-                                            readOnly: true,
-                                        }}
-                                        fullWidth
-                                        className={classes.textField}
-                                        value={state.scheduleStartDate}
-                                        type="date"
-                                        onChange={handleChange} />
-
-                                    <MyTextField
-                                        id="scheduleEndDate"
-                                        label="Schedule End Date"
-                                        InputProps={{
-                                            readOnly: true,
-                                        }}
-                                        fullWidth
-                                        className={classes.textField}
-                                        value={state.scheduleEndDate}
-                                        type="date"
-                                        onChange={handleChange} />
-
-                                    <MyTextField
-                                        id="startDate"
-                                        label="Start Date"
-                                        InputProps={{
-                                            readOnly: true,
-                                        }}
-                                        fullWidth
-                                        className={classes.textField}
-                                        value={state.startDate}
-                                        type="date"
-                                        onChange={handleChange} />
-
-                                    <MyTextField
-                                        id="completedDate"
-                                        label="Date Completed"
-                                        InputProps={{
-                                            readOnly: true,
-                                        }}
-                                        fullWidth
-                                        className={classes.textField}
-                                        value={state.completedDate}
-                                        type="date"
-                                        onChange={handleChange} />
-                                </Grid>
-                                <Grid container style={{ padding: '5px' }}>
+                                <Grid container column style={{ padding: '5px' }}>
 
                                     <label htmlFor="icon-button-file">
-                                        <Grid>
-                                            <Typography >GT Before Clean</Typography>
-                                            <IconButton color="primary" aria-label="upload picture" component="span">
+                                        <Typography >GT Before Clean</Typography>
+                                        <Grid container row >
+                                            <Grid item column>
+                                                {/* <IconButton color="primary" aria-label="upload picture" component="span"> */}
                                                 {/* <PhotoCamera /> */}
                                                 <MyTextField
-                                                    id="file1"
+                                                    id="img1"
                                                     label=""
                                                     InputProps={{
                                                         readOnly: true,
                                                     }}
                                                     fullWidth
                                                     className={classes.textField}
-                                                    type="file" />
-                                            </IconButton>
+                                                    type="file"
+                                                    onChange={handleChange} />
+                                                {/* </IconButton> */}
+                                                {state.img1 && <img src={state.img1} alt="logo" className={classes.gtImg} />}
+                                            </Grid>
+                                            {state.img1 && <Grid item column>
+                                                {/* <IconButton color="primary" aria-label="upload picture" component="span"> */}
+                                                <MyTextField
+                                                    id="img2"
+                                                    label=""
+                                                    InputProps={{
+                                                        readOnly: true,
+                                                    }}
+                                                    fullWidth
+                                                    className={classes.textField}
+                                                    type="file"
+                                                    onChange={handleChange} />
+                                                {/* </IconButton> */}
+                                                {state.img2 && <img src={state.img2} alt="logo" className={classes.gtImg} />}
+                                            </Grid>}
                                         </Grid>
+                                        <Typography >GT After Clean</Typography>
 
-                                        <Grid>
-                                            <Typography >GT After Clean</Typography>
-                                            <IconButton color="primary" aria-label="upload picture" component="span">
-                                                 {/* <PhotoCamera /> */}
+                                        <Grid container row >
+                                            <Grid item column>
+                                                {/* <IconButton color="primary" aria-label="upload picture" component="span"> */}
                                                 {/*<Typography style={{ marginLeft: '10px', color: 'Black' }}>Path</Typography> */}
                                                 <MyTextField
-                                                    id="file1"
+                                                    id="img3"
                                                     label=""
                                                     InputProps={{
                                                         readOnly: true,
                                                     }}
                                                     fullWidth
                                                     className={classes.textField}
-                                                    type="file" />
-                                            </IconButton>
+                                                    type="file"
+                                                    onChange={handleChange} />
+                                                {/* </IconButton> */}
+                                                {state.img3 && <img src={state.img3} alt="logo" className={classes.gtImg} />}
+                                            </Grid>
+
+                                            {state.img3 && <Grid item column>
+                                                {/* <IconButton color="primary" aria-label="upload picture" component="span"> */}
+                                                <MyTextField
+                                                    id="img4"
+                                                    label=""
+                                                    InputProps={{
+                                                        readOnly: true,
+                                                    }}
+                                                    fullWidth
+                                                    className={classes.textField}
+                                                    type="file"
+                                                    onChange={handleChange} />
+                                                {/* </IconButton> */}
+                                                {state.img4 && <img src={state.img4} alt="logo" className={classes.gtImg} />}
+                                            </Grid>}
                                         </Grid>
                                     </label>
                                 </Grid>
@@ -500,14 +628,14 @@ const WorkOrderView = props => {
 
                                     <Grid item xs={3} >
                                         <MyTextField
-                                            id="UCOinvoice"
+                                            id="ucoInvoice"
                                             label="UCO Invoice"
                                             InputProps={{
                                                 readOnly: true,
                                             }}
                                             fullWidth
                                             className={classes.textField}
-                                            value={ucoState.UCOinvoice}
+                                            value={ucoState.ucoInvoice}
                                             onChange={handleChangetUCO} />
 
                                     </Grid>
@@ -531,12 +659,12 @@ const WorkOrderView = props => {
                         </Grid>
                     </ExpansionPanel>
                     <Grid container justify="right" style={{ margin: '10px', padding: '10px' }}>
-                        <Button variant="outlined" color="primary" style={{ width: '25%', marginRight: '10px' }}  >Cancel</Button>
+                        <Button variant="outlined" color="primary" className={classes.woButtonRight}  >Cancel</Button>
                         <Button variant="contained" color="primary" style={{ width: '25%', color: 'white' }} onClick={handleClick} >Save</Button>
                     </Grid>
                 </div>
             </Paper>
-        </Container>
+        </Container></div>
     );
 }
 
@@ -544,4 +672,4 @@ const WorkOrderView = props => {
 //     return addUserDtls = details => { dispatch(addUserDtls(details)) }
 // }
 
-export default withStyles(styles)(WorkOrderView);
+export default withStyles(appStyles)(WorkOrderView);

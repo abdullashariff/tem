@@ -29,7 +29,7 @@ const MenuProps = {
     },
 };
 
-const ABDSelector = props => {
+const ABDSelector = React.memo(props => {
 
     const classes = useStyles();
     const theme = useTheme();
@@ -56,10 +56,10 @@ const ABDSelector = props => {
                 <Select
                     {...props}
                     multiple={props.isMulti}
-                    value={props.value ? props.value : props.state[props.key]}
+                    value={props.value ? props.value : (props.state && props.key && props.state[props.key])}
                     onChange={handleChange}
                     input={<Input />}
-                    renderValue={props.isMulti ? selected => selected.join(', ') : ''}
+                    renderValue={props.isMulti ? selected => (selected ? selected.join(', ') : '') : ''}
                     MenuProps={MenuProps}
                     style={{ padding: 0,fontSize: '14px' }}
                 >
@@ -77,6 +77,6 @@ const ABDSelector = props => {
             </Grid>
         </>)
 
-}
+});
 
-export default React.memo(ABDSelector);
+export default ABDSelector;

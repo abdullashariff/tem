@@ -1,6 +1,7 @@
 import { combineReducers } from 'redux';
-import UserReducer from './user-reducer';
+import UserLoginDetails from './user-reducer';
+import WorkorderReducer from './word-order-reducer';
 
 export default combineReducers({
-    UserReducer
+    UserLoginDetails,WorkorderReducer
 });
