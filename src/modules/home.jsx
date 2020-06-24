@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDispatch } from 'react-redux';
-import { withStyles, makeStyles, Grid } from '@material-ui/core';
+import { withStyles, makeStyles, Grid, CircularProgress } from '@material-ui/core';
 import appStyles from '../shared/layout/my-styles';
 //import UserDetails from './../reducers/user-reducer';
 import { connect, useSelector } from 'react-redux';
@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { useHistory } from 'react-router';
 import { addWorkOrder, WorkorderReducer } from './../../src/reducers/word-order-reducer';
 import { formatPieChartData } from './../modules/work-order/work-order-constants';
+import { SERVER_ID } from '../shared/constants';
 
 const useStyles = makeStyles((theme) => ({
     piechart: {
@@ -23,7 +24,7 @@ const useStyles = makeStyles((theme) => ({
         //margin: '16px',
         alignContent: 'center',
         margin: '0 auto'
-        },
+    },
     kpiTitle: {
         margin: '10px',
     },
@@ -40,6 +41,12 @@ const useStyles = makeStyles((theme) => ({
     header: {
         position: 'sticky',
         top: 0
+    },
+    spinner: {
+        left: '50%',
+        top: '50%',
+        zIndex: 2,
+        position: 'absolute'
     }
 }));
 
@@ -98,44 +105,48 @@ const Home = props => {
     }, [userLoginDetails]);
 
     const headers = ['Business Name', 'Location', 'Status', 'Created By', 'Created Date', 'WaterSource'];
-    const columns = ['businessName', 'location', 'status', 'createdBy', 'createdDate', 'waterSource'];
+    const columns = ['businessName', 'location', 'cleaningStatus', 'createdBy', 'createdDate', 'waterSource'];
+    const [progressBar, setProgressBar] = useState(false);
 
     const getWorkOrders = async () => {
-        const response = await Axios({
-            method: 'POST',
-            url: 'http://localhost:8080/tem/workOrders',
-            data: { createdBy: userLoginDetails.userDetails.firstName + ' ' + userLoginDetails.userDetails.lastName },
-            headers: {
-                'content-type': 'application/json', 'Access-Control-Allow-Origin': "*"
-            },
-        });
-        let activityTypes = {};
+        try {
+            setProgressBar(true);
+            const response = await Axios({
+                method: 'POST',
+                url: SERVER_ID+'/workOrders',
+                data: { createdBy: userLoginDetails.userDetails.firstName + ' ' + userLoginDetails.userDetails.lastName },
+                headers: {
+                    'content-type': 'application/json', 'Access-Control-Allow-Origin': "*"
+                },
+            });
+            let activityTypes = {};
 
-        if (response && response.data) {
-            console.log(response.data);
-            let workOrders = response.data;
-            if (workOrders) {
-                workOrders.forEach((item, index) => {
-                    workOrders[index] = {
-                        ...workOrders[index],
-                        businessName: workOrders[index].business.businessName,
-                        location: workOrders[index].business.location
-                    }
-                    if (activityTypes && workOrders[index].business.activityType) {
-                        if (activityTypes[workOrders[index].business.activityType]) {
-                            activityTypes[workOrders[index].business.activityType] = activityTypes[workOrders[index].business.activityType] + 1;
-                        } else {
-                            activityTypes[workOrders[index].business.activityType] = 1;
+            if (response && response.data) {
+                console.log(response.data);
+                let workOrders = response.data;
+                if (workOrders) {
+                    workOrders.forEach((item, index) => {
+                        workOrders[index] = {
+                            ...workOrders[index],
+                            businessName: workOrders[index].business.businessName,
+                            location: workOrders[index].business.location
                         }
-                    }
-                });
+                        if (activityTypes && workOrders[index].business.activityType) {
+                            if (activityTypes[workOrders[index].business.activityType]) {
+                                activityTypes[workOrders[index].business.activityType] = activityTypes[workOrders[index].business.activityType] + 1;
+                            } else {
+                                activityTypes[workOrders[index].business.activityType] = 1;
+                            }
+                        }
+                    });
+                }
+                setWorkOrders([...workOrders]);
+                const temp = await formatPieChartData(activityTypes, 'activityTypes');
+                setState({ ...state, activityTypes: temp });
             }
-
-            console.log('activityTypes ', activityTypes)
-            setWorkOrders([...workOrders]);
-            const temp = await formatPieChartData(activityTypes, 'activityTypes');
-            console.log('temptemptemp ',temp);
-            setState({ ...state, activityTypes: temp});
+            setProgressBar(false);
+        } catch (ex) {
+            setProgressBar(false);
         }
     }
 
@@ -145,8 +156,8 @@ const Home = props => {
     };
 
     return (<>
+        {progressBar && <div className={styles.spinner}><CircularProgress /></div>}
         <Grid style={{ display: 'flex' }}>
-
             {state.activityTypes && <Grid style={{ flex: 1 }}>
                 <div className={styles.piechart}><PieCharts dataMock={state.activityTypes} isObject={true} /></div>
                 <div className={styles.kpiSubTitle}>Activity Types</div>

@@ -61,8 +61,14 @@ const appStyles = (theme) => {
         woButtonRight :{
              width: '25%',
               marginRight: '10px'
+        },
+        spinner: {
+            left: '50%',
+            top: '50%',
+            zIndex: 2,
+            position: 'absolute'
         }
-    });
+    }); 
 }
 
 export default appStyles;
